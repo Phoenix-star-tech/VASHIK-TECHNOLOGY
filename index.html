@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VASHIK TECHNOLOGY — We build what matters</title>
+
+    <!-- Primary Meta Tags -->
+    <meta name="title" content="VASHIK TECHNOLOGY — We build what matters" />
+    <meta name="description"
+        content="DEEP builds scalable digital platforms, enterprise systems, and engineering solutions that power modern businesses. We engineer infrastructure, not decoration." />
+    <meta name="keywords"
+        content="digital engineering, enterprise platforms, software development, cloud architecture, system design, DEEP engineering, technical infrastructure" />
+    <meta name="author" content="VASHIK TECHNOLOGY" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://deep.dev/" />
+    <meta property="og:title" content="VASHIK TECHNOLOGY — We build what matters" />
+    <meta property="og:description"
+        content="DEEP builds scalable digital platforms, enterprise systems, and engineering solutions that power modern businesses. We engineer infrastructure, not decoration." />
+    <meta property="og:image" content="https://deep.dev/meta-image.jpg" />
+
+    <!-- Twitter / X -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://deep.dev/" />
+    <meta property="twitter:title" content="VASHIK TECHNOLOGY — We build what matters" />
+    <meta property="twitter:description"
+        content="DEEP builds scalable digital platforms, enterprise systems, and engineering solutions that power modern businesses. We engineer infrastructure, not decoration." />
+    <meta property="twitter:image" content="https://deep.dev/meta-image.jpg" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://deep.dev/" />
+
+    <meta name="theme-color" content="#ffffff" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+
+    <link rel="icon" type="image/png" href="favicon.png?v=2" />
+    <link rel="stylesheet" href="style.css?v=2.5" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+    <script src="main.js" defer></script>
+</head>
+
+<body>
+    <!-- Custom Cursor -->
+    <div class="cursor" id="cursor" aria-hidden="true">
+        <div class="cursor__dot"></div>
+        <div class="cursor__ring"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+        <div class="nav__inner">
+            <a href="#" class="nav__logo" id="nav-logo" data-cursor="link">
+                <img src="logo.png?v=2" alt="VASHIK Logo" class="nav__logo-img" />
+                <span>VASHIK TECHNOLOGY</span>
+            </a>
+            <div class="nav__links" id="nav-links">
+                <a href="#about" class="nav__link" data-cursor="link">About</a>
+                <a href="#services" class="nav__link" data-cursor="link">Services</a>
+                <a href="#experience" class="nav__link" data-cursor="link">Approach</a>
+                <a href="#contact" class="nav__link" data-cursor="link">Contact</a>
+            </div>
+            <button class="nav__toggle" id="nav-toggle" aria-label="Toggle menu">
+                <span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main id="main">
+
+        <!-- ========== HERO ========== -->
+        <section class="hero" id="hero">
+            <div class="hero__canvas" id="hero-canvas" aria-hidden="true"></div>
+            <div class="hero__container">
+                <div class="hero__label" id="hero-label">
+                    <span class="hero__label-dot"></span>
+                    Engineering the future
+                </div>
+                <h1 class="hero__title" id="hero-title">VASHIK</h1>
+                <p class="hero__subtitle" id="hero-subtitle">
+                    We build what matters
+                </p>
+                <p class="hero__description" id="hero-description">
+                    We architect and build the digital infrastructure<br class="hide-mobile" />
+                    that powers ambitious enterprises.
+                </p>
+                <div class="hero__cta" id="hero-cta">
+                    <a href="#services" class="btn btn--primary" data-cursor="button">What We Build</a>
+                    <a href="#contact" class="btn btn--ghost" data-cursor="button">Get in Touch</a>
+                </div>
+            </div>
+            <div class="hero__scroll" id="hero-scroll">
+                <span>Scroll</span>
+                <div class="hero__scroll-line"></div>
+            </div>
+        </section>
+
+        <!-- ========== ABOUT ========== -->
+        <section class="section about section--cinematic" id="about">
+            <div class="container">
+                <div class="about__layout">
+
+                    <!-- Left: header + description -->
+                    <div class="about__left">
+                        <span class="section__label" id="about-label">01 — About</span>
+                        <h2 class="section__title parallax-layer" data-depth="0.06" id="about-title">
+                            We don't just build software.<br />We engineer platforms.
+                        </h2>
+                        <div class="about__text" id="about-text">
+                            <p>DEEP is a focused engineering company that designs and builds
+                                digital platforms for enterprises that demand reliability, scale,
+                                and precision. We work with organizations that understand technology
+                                is infrastructure — not decoration.</p>
+                            <p>Our team brings deep expertise in distributed systems, cloud
+                                architecture, and platform engineering. We build what matters
+                                and build it to last.</p>
+                        </div>
+                    </div>
+
+                    <!-- Right: founders carousel -->
+                    <div class="founders" id="founders">
+                        <div class="founders__track" id="founders-track">
+
+                            <!-- Founder 1 -->
+                            <div class="founder-card" id="founder-1">
+                                <div class="founder-card__image-wrap">
+                                    <img src="founder_karthik.jpg" alt="K.KARTHIK KUMAR — Founder & CEO"
+                                        class="founder-card__image" />
+                                    <span class="founder-card__badge">Founder</span>
+                                </div>
+                                <div class="founder-card__body">
+                                    <div class="founder-card__meta">
+                                        <span class="founder-card__name">K.KARTHIK KUMAR</span>
+                                        <span class="founder-card__role">Founder &amp; CEO</span>
+                                    </div>
+                                    <blockquote class="founder-card__quote">
+                                        "Innovation isn't just about the technology we build; it's about the robust
+                                        foundation we lay. We architect digital infrastructures that empower enterprises
+                                        to scale seamlessly and thrive."
+                                    </blockquote>
+                                </div>
+                            </div>
+
+                            <!-- Founder 2 -->
+                            <div class="founder-card" id="founder-2">
+                                <div class="founder-card__image-wrap">
+                                    <img src="founder_vamshi_2.jpg" alt="P.VAMSHI KRISHNA — Co-Founder & CFO"
+                                        class="founder-card__image" />
+                                    <span class="founder-card__badge">Co-Founder</span>
+                                </div>
+                                <div class="founder-card__body">
+                                    <div class="founder-card__meta">
+                                        <span class="founder-card__name">P.VAMSHI KRISHNA</span>
+                                        <span class="founder-card__role">CO-FOUNDER &amp; CFO</span>
+                                    </div>
+                                    <blockquote class="founder-card__quote">
+                                        "True scale emerges when visionary engineering meets financial prudence. We are
+                                        committed to fueling sustainable growth by transforming complex operational
+                                        challenges into competitive advantages."
+                                    </blockquote>
+                                </div>
+                            </div>
+
+                            <!-- Founder 3 -->
+                            <div class="founder-card" id="founder-3">
+                                <div class="founder-card__image-wrap">
+                                    <img src="founder_cto_real.png" alt="CH.SAI HARSHITH GOUD — Co-Founder & COO"
+                                        class="founder-card__image" />
+                                    <span class="founder-card__badge">Co-Founder</span>
+                                </div>
+                                <div class="founder-card__body">
+                                    <div class="founder-card__meta">
+                                        <span class="founder-card__name">CH.SAI HARSHITH GOUD</span>
+                                        <span class="founder-card__role">Co-Founder &amp; COO</span>
+                                    </div>
+                                    <blockquote class="founder-card__quote">
+                                        "The most potent technology is one that feels effortless. We specialize in
+                                        bridging the gap between profound technical complexity and intuitive,
+                                        transformative experiences that resonate globally."
+                                    </blockquote>
+                                </div>
+                            </div>
+
+
+
+                            <!-- Founder 4 -->
+                            <div class="founder-card" id="founder-4">
+                                <div class="founder-card__image-wrap">
+                                    <img src="sahil.png" alt="Sahil — Co-Founder & CMO" class="founder-card__image" />
+                                    <span class="founder-card__badge">Co-Founder</span>
+                                </div>
+                                <div class="founder-card__body">
+                                    <div class="founder-card__meta">
+                                        <span class="founder-card__name">SAHIL</span>
+                                        <span class="founder-card__role">Co-Founder &amp; CMO</span>
+                                    </div>
+                                    <blockquote class="founder-card__quote">
+                                        "Marketing is the bridge between great engineering and the world. We tell the
+                                        story of technology in a way that moves people and builds lasting brand equity."
+                                    </blockquote>
+                                </div>
+                            </div>
+
+                            <!-- Founder 5 -->
+                            <div class="founder-card" id="founder-5">
+                                <div class="founder-card__image-wrap">
+                                    <img src="Akhil.png" alt="B. AKHIL — UI & UX Designer"
+                                        class="founder-card__image" />
+                                    <span class="founder-card__badge">Design Lead</span>
+                                </div>
+                                <div class="founder-card__body">
+                                    <div class="founder-card__meta">
+                                        <span class="founder-card__name">B. AKHIL</span>
+                                        <span class="founder-card__role">UI &amp; UX DESIGNER</span>
+                                    </div>
+                                    <blockquote class="founder-card__quote">
+                                        "Good design is about making complex systems feel simple and intuitive. We craft
+                                        digital experiences that users naturally understand."
+                                    </blockquote>
+                                </div>
+                            </div>
+
+
+                            <!-- Founder 6 -->
+                            <div class="founder-card" id="founder-6">
+                                <div class="founder-card__image-wrap">
+                                    <img src="harshitha.png" alt="T. Naga Shiva Harshitha — Technology & Innovation"
+                                        class="founder-card__image" />
+                                    <span class="founder-card__badge">Innovation Lead</span>
+                                </div>
+                                <div class="founder-card__body">
+                                    <div class="founder-card__meta">
+                                        <span class="founder-card__name">T. NAGA SHIVA HARSHITHA</span>
+                                        <span class="founder-card__role">Technology &amp; Innovation</span>
+                                    </div>
+                                    <blockquote class="founder-card__quote">
+                                        "Innovation is the engine of progress. We push the boundaries of what's
+                                        possible, turning emerging technologies into real-world solutions that redefine
+                                        industries."
+                                    </blockquote>
+                                </div>
+                            </div>
+
+                        </div>
+                        <!-- Dots navigation -->
+                        <div class="founders__dots" id="founders-dots">
+                            <button class="founders__dot is-active" data-index="0" aria-label="Founder 1"></button>
+                            <button class="founders__dot" data-index="1" aria-label="Founder 2"></button>
+                            <button class="founders__dot" data-index="2" aria-label="Founder 3"></button>
+                            <button class="founders__dot" data-index="3" aria-label="Founder 4"></button>
+                            <button class="founders__dot" data-index="4" aria-label="Founder 5"></button>
+                            <button class="founders__dot" data-index="5" aria-label="Founder 6"></button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== SERVICES ========== -->
+        <section class="section services section--cinematic" id="services">
+
+            <div class="container">
+                <div class="section__header">
+                    <span class="section__label" id="services-label">02 — Services</span>
+                    <h2 class="section__title parallax-layer" data-depth="0.06" id="services-title">What We Build</h2>
+                    <p class="section__desc" id="services-desc">
+                        We focus on four core disciplines that define modern enterprise engineering.
+                    </p>
+                </div>
+                <div class="services__grid" id="services-grid">
+                    <article class="card" data-cursor="card" data-tilt>
+                        <div class="card__index">01</div>
+                        <div class="card__icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
+                                <polyline points="9 21 9 12 15 12 15 21" />
+                            </svg>
+                        </div>
+                        <h3 class="card__title">Mr.Helper</h3>
+                        <p class="card__text">Mr.Helper is a smart digital platform that connects customers with trusted
+                            local service providers for everyday home needs. It allows users to quickly book services
+                            like repairs, cleaning, and maintenance through a simple mobile app. The platform aims to
+                            save time and provide reliable, convenient home services at your doorstep. 🚀</p>
+                        <a href="https://mr-helper-services.onrender.com/" target="_blank" rel="noopener noreferrer"
+                            class="card__site-link" data-cursor="link">Visit Site →</a>
+                    </article>
+                    <article class="card" data-cursor="card" data-tilt>
+                        <div class="card__index">02</div>
+                        <div class="card__icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7l-9-5z" />
+                                <path d="M9 12l2 2 4-4" />
+                            </svg>
+                        </div>
+                        <h3 class="card__title">RAKSHAK-AI</h3>
+                        <p class="card__text">Rakshak AI v1 is an intelligent security layer placed between users and
+                            the database. It automatically scans every uploaded image before it reaches the server. The
+                            system detects 18+ content and hidden hacking scripts embedded in images. If any malicious
+                            or inappropriate content is found, the upload is instantly blocked. This ensures clean,
+                            safe, and secure data storage for applications and platforms.</p>
+                        <a href="https://rakshak-ufgj.onrender.com/" target="_blank" rel="noopener noreferrer"
+                            class="card__site-link" data-cursor="link">Visit Site →</a>
+                    </article>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ========== EXPERIENCE ========== -->
+        <section class="section experience section--cinematic" id="experience">
+
+            <div class="container">
+                <div class="section__header">
+                    <span class="section__label" id="exp-label">03 — Approach</span>
+                    <h2 class="section__title parallax-layer" data-depth="0.06" id="exp-title">Precision. At every
+                        layer.
+                    </h2>
+                </div>
+                <div class="experience__track" id="experience-track">
+                    <div class="pillar" id="pillar-1">
+                        <div class="pillar__line"></div>
+                        <div class="pillar__content">
+                            <span class="pillar__number">01</span>
+                            <h3 class="pillar__title">Discovery & Architecture</h3>
+                            <p class="pillar__text">We start by understanding the problem deeply — mapping domains,
+                                defining
+                                boundaries, and designing systems before writing a single line of code.</p>
+                        </div>
+                    </div>
+                    <div class="pillar" id="pillar-2">
+                        <div class="pillar__line"></div>
+                        <div class="pillar__content">
+                            <span class="pillar__number">02</span>
+                            <h3 class="pillar__title">Engineering & Iteration</h3>
+                            <p class="pillar__text">Our engineering process is disciplined and iterative. We build in
+                                small,
+                                testable increments with continuous integration and real-time feedback loops.</p>
+                        </div>
+                    </div>
+                    <div class="pillar" id="pillar-3">
+                        <div class="pillar__line"></div>
+                        <div class="pillar__content">
+                            <span class="pillar__number">03</span>
+                            <h3 class="pillar__title">Delivery & Scale</h3>
+                            <p class="pillar__text">We deliver production-ready platforms with monitoring,
+                                observability,
+                                and scaling strategies built in — not bolted on.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="experience__parallax" aria-hidden="true">
+                    <div class="parallax-shape shape--1" id="px-shape-1"></div>
+                    <div class="parallax-shape shape--2" id="px-shape-2"></div>
+                    <div class="parallax-shape shape--3" id="px-shape-3"></div>
+                    <div class="parallax-shape shape--4" id="px-shape-4"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== MARQUEE ========== -->
+        <section class="marquee-section" id="marquee" aria-hidden="true">
+            <div class="marquee__track" id="marquee-track">
+                <span class="marquee__item">Digital Platforms</span><span class="marquee__sep">◆</span>
+                <span class="marquee__item">Enterprise Systems</span><span class="marquee__sep">◆</span>
+                <span class="marquee__item">Scalable Architecture</span><span class="marquee__sep">◆</span>
+                <span class="marquee__item">Automation</span><span class="marquee__sep">◆</span>
+                <span class="marquee__item">Cloud Engineering</span><span class="marquee__sep">◆</span>
+                <span class="marquee__item">Platform Design</span><span class="marquee__sep">◆</span>
+                <span class="marquee__item">Digital Platforms</span><span class="marquee__sep">◆</span>
+                <span class="marquee__item">Enterprise Systems</span><span class="marquee__sep">◆</span>
+                <span class="marquee__item">Scalable Architecture</span><span class="marquee__sep">◆</span>
+                <span class="marquee__item">Automation</span><span class="marquee__sep">◆</span>
+                <span class="marquee__item">Cloud Engineering</span><span class="marquee__sep">◆</span>
+                <span class="marquee__item">Platform Design</span><span class="marquee__sep">◆</span>
+            </div>
+        </section>
+
+        <!-- ========== CONTACT ========== -->
+        <section class="section contact section--cinematic" id="contact">
+
+            <div class="container">
+                <div class="section__header section__header--center">
+                    <span class="section__label" id="contact-label">04 — Contact</span>
+                    <h2 class="section__title parallax-layer" data-depth="0.06" id="contact-title">Let's build
+                        something<br />that matters.</h2>
+                    <p class="section__desc" id="contact-desc">
+                        We're selective about the projects we take on. If you're building
+                        something ambitious, we'd like to hear about it.
+                    </p>
+                </div>
+                <div class="contact__actions" id="contact-actions">
+                    <a href="mailto:vashiktechnology@gmail.com" class="btn btn--primary btn--lg"
+                        data-cursor="button">vashiktechnology@gmail.com</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" id="footer">
+        <div class="container">
+            <div class="footer__inner">
+                <div class="footer__brand">
+                    <span class="footer__logo">VASHIK TECHNOLOGY</span>
+                    <p class="footer__tagline">We build what matters</p>
+                </div>
+                <div class="footer__links">
+                    <a href="#about" class="footer__link" data-cursor="link">About</a>
+                    <a href="#services" class="footer__link" data-cursor="link">Services</a>
+                    <a href="#experience" class="footer__link" data-cursor="link">Approach</a>
+                    <a href="#contact" class="footer__link" data-cursor="link">Contact</a>
+                </div>
+                <div class="footer__copy">
+                    <p>&copy; 2026 VASHIK TECHNOLOGY. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>
