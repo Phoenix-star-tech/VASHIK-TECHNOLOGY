@@ -272,7 +272,48 @@
         reveal('#services', '#services .section__title', { y: 18, duration: 1.2, delay: 0.1 });
         reveal('#services', '#services .section__desc', { y: 14, duration: 1, delay: 0.15 });
 
-        gsap.utils.toArray('.card').forEach((card, i) => {
+        // Customer Journey
+        gsap.fromTo('#journey-steps', { opacity: 0, y: 20 }, {
+            scrollTrigger: { trigger: '#journey-steps', start: 'top 85%', toggleActions: 'play none none none' },
+            opacity: 1, y: 0, duration: 1.1, ease: 'power2.out'
+        });
+
+        // Pricing Table
+        gsap.fromTo('#packages-table', { opacity: 0, y: 24 }, {
+            scrollTrigger: { trigger: '#packages-table', start: 'top 85%', toggleActions: 'play none none none' },
+            opacity: 1, y: 0, duration: 1.2, delay: 0.1, ease: 'power3.out'
+        });
+
+        // Addons section
+        reveal('#services-addons', '#addons-title', { y: 16, duration: 1 });
+        reveal('#services-addons', '#addons-desc', { y: 14, duration: 1, delay: 0.1 });
+        gsap.fromTo('#addons-grid', { opacity: 0, y: 20 }, {
+            scrollTrigger: { trigger: '#addons-grid', start: 'top 85%', toggleActions: 'play none none none' },
+            opacity: 1, y: 0, duration: 1.1, delay: 0.15, ease: 'power2.out'
+        });
+
+        // Free Support banner
+        gsap.fromTo('.free-support__card', { opacity: 0, y: 20, scale: 0.98 }, {
+            scrollTrigger: { trigger: '#free-support', start: 'top 82%', toggleActions: 'play none none none' },
+            opacity: 1, y: 0, scale: 1, duration: 1.2, ease: 'power3.out'
+        });
+
+        // Support Plans
+        reveal('#support-plans', '#support-plans-title', { y: 16, duration: 1 });
+        reveal('#support-plans', '#support-plans-desc', { y: 14, duration: 1, delay: 0.1 });
+
+        gsap.utils.toArray('.support-card').forEach((card, i) => {
+            gsap.fromTo(card, { opacity: 0, y: 24 }, {
+                scrollTrigger: { trigger: card, start: 'top 88%', toggleActions: 'play none none none' },
+                opacity: 1, y: 0, duration: 1.1, delay: i * 0.12, ease: 'power3.out'
+            });
+        });
+
+        // Projects
+        reveal('#services-projects', '#projects-title', { y: 16, duration: 1 });
+        reveal('#services-projects', '#projects-desc', { y: 14, duration: 1, delay: 0.1 });
+
+        gsap.utils.toArray('.project-card').forEach((card, i) => {
             gsap.fromTo(card, { opacity: 0, y: 30, scale: 0.98 }, {
                 scrollTrigger: { trigger: card, start: 'top 88%', toggleActions: 'play none none none' },
                 opacity: 1, y: 0, scale: 1, duration: 1.1, delay: (i % 2) * 0.12, ease: 'power3.out'
