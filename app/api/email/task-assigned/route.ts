@@ -23,8 +23,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Dispatch task assignment notification asynchronously in background
-    sendTaskAssignmentNotification({
+    // Dispatch task assignment notification (awaited for Vercel serverless execution)
+    const emailResult = await sendTaskAssignmentNotification({
       employeeName: employeeName || 'Team Member',
       employeeEmail,
       taskTitle,
@@ -34,11 +34,14 @@ export async function POST(req: Request) {
       assignedBy: assignedBy || 'System Administrator',
       taskUrl,
       isReassignment: Boolean(isReassignment)
-    }, { async: true });
+    }, { async: false });
 
     return NextResponse.json({
-      success: true,
-      message: `Task assignment email queued for delivery to ${employeeEmail}`
+      success: emailResult.success,
+      message: emailResult.success
+        ? `Task assignment email sent successfully to ${employeeEmail}`
+        : `Email delivery notice: ${emailResult.error}`,
+      messageId: emailResult.messageId
     });
   } catch (err: any) {
     console.error('[API /api/email/task-assigned Error]', err);

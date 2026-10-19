@@ -1,4 +1,4 @@
-import { send_email } from './brevo';
+import { send_email, SendEmailResult } from './brevo';
 import { generateWelcomeEmail, WelcomeEmailData } from './templates/welcomeEmail';
 import { generateTaskAssignedEmail, TaskAssignedEmailData } from './templates/taskAssignedEmail';
 
@@ -31,7 +31,7 @@ function dispatchInBackground(task: () => Promise<any>): void {
 export async function sendWelcomeNotification(
   params: SendWelcomeNotificationParams,
   options: { async?: boolean } = { async: true }
-) {
+): Promise<SendEmailResult> {
   const runner = async () => {
     try {
       const { subject, html, text } = generateWelcomeEmail(params);
@@ -73,7 +73,7 @@ export async function sendWelcomeNotification(
 export async function sendTaskAssignmentNotification(
   params: SendTaskAssignmentParams,
   options: { async?: boolean } = { async: true }
-) {
+): Promise<SendEmailResult> {
   const runner = async () => {
     try {
       const { subject, html, text } = generateTaskAssignedEmail(params);

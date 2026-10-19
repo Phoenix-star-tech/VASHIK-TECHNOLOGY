@@ -13,18 +13,21 @@ export async function POST(req: Request) {
       );
     }
 
-    // Dispatch welcome notification asynchronously in background
-    sendWelcomeNotification({
+    // Dispatch welcome notification (awaited for Vercel serverless execution)
+    const emailResult = await sendWelcomeNotification({
       employeeName: employeeName || username,
       employeeEmail,
       username,
       tempPassword,
       loginUrl
-    }, { async: true });
+    }, { async: false });
 
     return NextResponse.json({
-      success: true,
-      message: `Welcome email queued for delivery to ${employeeEmail}`
+      success: emailResult.success,
+      message: emailResult.success
+        ? `Welcome email sent successfully to ${employeeEmail}`
+        : `Email delivery notice: ${emailResult.error}`,
+      messageId: emailResult.messageId
     });
   } catch (err: any) {
     console.error('[API /api/email/welcome Error]', err);
