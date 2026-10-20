@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://vashik-technology.vercel.app/sitemap.xml
+Sitemap: https://vashik.in/sitemap.xml

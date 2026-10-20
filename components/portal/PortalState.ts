@@ -95,6 +95,27 @@ export interface AuditLog {
   created_at: string;
 }
 
+export type AnnouncementCategory = 'Company Update' | 'Milestone' | 'Event' | 'Urgent' | 'General' | 'Policy';
+
+export interface AnnouncementButton {
+  id: string;
+  label: string;
+  url: string;
+  variant?: 'primary' | 'secondary' | 'outline';
+}
+
+export interface PortalAnnouncement {
+  id: number;
+  title: string;
+  body: string;
+  category: AnnouncementCategory;
+  is_pinned: boolean;
+  buttons: AnnouncementButton[];
+  created_by_name: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 // Initial seed data
 const DEFAULT_USERS: PortalUser[] = [
   {
@@ -276,6 +297,66 @@ const DEFAULT_NOTIFICATIONS: NotificationItem[] = [
   }
 ];
 
+const DEFAULT_ANNOUNCEMENTS: PortalAnnouncement[] = [
+  {
+    id: 1,
+    title: 'Welcome to Vashik Technologies Official Portal & vashik.in',
+    body: 'We are thrilled to officially launch our brand new company portal and our updated corporate domain at vashik.in! All employee services, task tracking, deliverable verification, and company updates are now unified under one seamless system. Please explore your portal workspace, check your assigned deliverables, and ensure your profile information is up to date.',
+    category: 'Company Update',
+    is_pinned: true,
+    created_by_name: 'Vashik Admin',
+    created_at: new Date(Date.now() - 2 * 3600000).toISOString(),
+    buttons: [
+      {
+        id: 'btn-1',
+        label: 'Open Employee Portal →',
+        url: '/portal',
+        variant: 'primary'
+      },
+      {
+        id: 'btn-2',
+        label: 'Explore Our Engineering Services',
+        url: '/#services',
+        variant: 'outline'
+      }
+    ]
+  },
+  {
+    id: 2,
+    title: 'Engineering Milestone: Next-Gen Cloud Platform Delivery',
+    body: 'A huge congratulations to our core technical team for successfully provisioning and deploying our high-throughput cloud infrastructure! Reminder to all team leads: on-time completion of deliverables before deadline awards an automatic +5 points bonus on the official VASHIK leaderboard.',
+    category: 'Milestone',
+    is_pinned: false,
+    created_by_name: 'Vashik Admin',
+    created_at: new Date(Date.now() - 24 * 3600000).toISOString(),
+    buttons: [
+      {
+        id: 'btn-3',
+        label: 'View Deliverables & Countdown',
+        url: '/portal',
+        variant: 'primary'
+      }
+    ]
+  },
+  {
+    id: 3,
+    title: 'Upcoming All-Hands Tech Showcase & Innovation Review',
+    body: 'Join the engineering and product team for our upcoming quarterly innovation review. We will review customer feedback, showcase new design system tokens, and recognize top contributors on the points ledger.',
+    category: 'Event',
+    is_pinned: false,
+    created_by_name: 'Vashik Admin',
+    created_at: new Date(Date.now() - 48 * 3600000).toISOString(),
+    buttons: [
+      {
+        id: 'btn-4',
+        label: 'Check Team Leaderboard',
+        url: '/portal',
+        variant: 'secondary'
+      }
+    ]
+  }
+];
+
 export class PortalStorage {
   private static STORAGE_PREFIX = 'vashik_portal_';
 
@@ -358,6 +439,73 @@ export class PortalStorage {
     }
   }
 
+  // Announcements CRUD
+  static getAnnouncements(): PortalAnnouncement[] {
+    return this.get<PortalAnnouncement[]>('announcements', DEFAULT_ANNOUNCEMENTS);
+  }
+
+  static setAnnouncements(items: PortalAnnouncement[]): void {
+    this.set('announcements', items);
+  }
+
+  static addAnnouncement(item: Omit<PortalAnnouncement, 'id' | 'created_at'>): PortalAnnouncement {
+    const current = this.getAnnouncements();
+    const newAnnouncement: PortalAnnouncement = {
+      ...item,
+      id: Date.now(),
+      created_at: new Date().toISOString()
+    };
+    // If pinned, insert at start, else after pinned items
+    const updated = [newAnnouncement, ...current];
+    this.setAnnouncements(updated);
+
+    // Sync to Supabase if available
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase.from('announcements').insert([{
+        title: newAnnouncement.title,
+        body: newAnnouncement.body,
+        category: newAnnouncement.category,
+        is_pinned: newAnnouncement.is_pinned,
+        buttons: newAnnouncement.buttons,
+        created_by_name: newAnnouncement.created_by_name
+      }]).then();
+    }
+
+    this.logAudit('Announcement Published', `Admin published "${newAnnouncement.title}"`);
+    return newAnnouncement;
+  }
+
+  static updateAnnouncement(id: number, updates: Partial<PortalAnnouncement>): void {
+    const current = this.getAnnouncements();
+    const updated = current.map(a => a.id === id ? { ...a, ...updates, updated_at: new Date().toISOString() } : a);
+    this.setAnnouncements(updated);
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase.from('announcements').update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      }).eq('id', id).then();
+    }
+    this.logAudit('Announcement Updated', `Announcement ID #${id} updated`);
+  }
+
+  static deleteAnnouncement(id: number): void {
+    const current = this.getAnnouncements();
+    const target = current.find(a => a.id === id);
+    const updated = current.filter(a => a.id !== id);
+    this.setAnnouncements(updated);
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase.from('announcements').delete().eq('id', id).then();
+    }
+    if (target) {
+      this.logAudit('Announcement Deleted', `Deleted announcement "${target.title}"`);
+    }
+  }
+
   static getSessionUser(): PortalUser | null {
     return this.get<PortalUser | null>('session_user', null);
   }
@@ -432,6 +580,12 @@ export class PortalStorage {
       const { data: dbNotifs } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
       if (dbNotifs) {
         this.setNotifications(dbNotifs);
+      }
+
+      // 5. Fetch Announcements
+      const { data: dbAnnouncements } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+      if (dbAnnouncements && dbAnnouncements.length > 0) {
+        this.setAnnouncements(dbAnnouncements);
       }
 
       return true;

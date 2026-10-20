@@ -6,7 +6,7 @@ import { generateTaskAssignedEmail } from '@/lib/email/templates/taskAssignedEma
 export async function GET() {
   const hasApiKey = Boolean(process.env.BREVO_API_KEY && process.env.BREVO_API_KEY !== 'your_brevo_api_key_here');
   const senderEmail = process.env.BREVO_SENDER_EMAIL || '(not configured)';
-  const senderName = process.env.BREVO_SENDER_NAME || 'Veshik Technologies';
+  const senderName = process.env.BREVO_SENDER_NAME || 'Vashik Technologies';
 
   return NextResponse.json({
     status: 'Brevo Email Service Ready',
@@ -30,10 +30,10 @@ export async function POST(req: Request) {
       template = generateTaskAssignedEmail({
         employeeName: 'Test Recipient',
         taskTitle: 'Verify Brevo Transactional Email Integration',
-        description: 'This is a test notification confirming that the automated Brevo email delivery pipeline is operational for Veshik Technologies.',
+        description: 'This is a test notification confirming that the automated Brevo email delivery pipeline is operational for Vashik Technologies.',
         priority: 'High',
         dueDate: new Date(Date.now() + 48 * 3600000).toISOString(),
-        assignedBy: 'Veshik IT Automation',
+        assignedBy: 'Vashik IT Automation',
         isReassignment: false
       });
     } else {
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
         employeeName: 'Test Recipient',
         username: 'test_user',
         tempPassword: 'Temp@' + Math.floor(1000 + Math.random() * 9000),
-        loginUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://vashik.in/protal'
+        loginUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://vashik.in/portal'
       });
     }
 

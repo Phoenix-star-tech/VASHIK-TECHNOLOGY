@@ -68,6 +68,15 @@ export default function Navbar() {
             Contact
           </a>
           <a
+            href="/announcements"
+            className="nav__link nav__announcements-cta"
+            data-cursor="link"
+            onClick={closeMenu}
+          >
+            <span style={{ fontSize: '13px' }}>📢</span>
+            <span>Announcements</span>
+          </a>
+          <a
             href="/portal"
             className="nav__link nav__portal-cta"
             data-cursor="link"

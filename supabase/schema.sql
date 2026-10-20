@@ -262,3 +262,20 @@ VALUES
     FALSE
 )
 ON CONFLICT (username) DO NOTHING;
+
+-- 8. ANNOUNCEMENTS TABLE
+CREATE TABLE IF NOT EXISTS public.announcements (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    category VARCHAR(50) DEFAULT 'General',
+    is_pinned BOOLEAN DEFAULT FALSE,
+    buttons JSONB DEFAULT '[]'::jsonb,
+    created_by_name VARCHAR(150) DEFAULT 'Vashik Admin',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_announcements_created ON public.announcements(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_announcements_pinned ON public.announcements(is_pinned);
+

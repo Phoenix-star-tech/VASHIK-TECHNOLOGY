@@ -13,8 +13,13 @@ import {
   NotificationItem,
   AuditLog,
   PortalStorage,
-  generatePassword
+  generatePassword,
+  PortalAnnouncement,
+  AnnouncementCategory,
+  AnnouncementButton
 } from './PortalState';
+import AdminAnnouncementsTab from './AdminAnnouncementsTab';
+import AdminAnnouncementModal from './AdminAnnouncementModal';
 import { isSupabaseConfigured, getSupabaseConfig, getSupabaseClient } from '@/lib/supabase';
 import {
   Users,
@@ -58,13 +63,20 @@ import {
   Info,
   UserCheck,
   LayoutGrid,
-  Table as TableIcon
+  Table as TableIcon,
+  Megaphone,
+  Pin
 } from 'lucide-react';
 
 export default function AdminPortalView() {
   const [mounted, setMounted] = useState(false);
   const [currentAdmin, setCurrentAdmin] = useState<PortalUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'tasks' | 'leaderboard' | 'audit'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'tasks' | 'announcements' | 'leaderboard' | 'audit'>('overview');
+
+  // Announcements State
+  const [announcements, setAnnouncements] = useState<PortalAnnouncement[]>([]);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<PortalAnnouncement | null>(null);
 
   // Admin login form state
   const [adminUsername, setAdminUsername] = useState('');
@@ -141,6 +153,8 @@ export default function AdminPortalView() {
   // Task Reassignment state
   const [reassignTargetEmpId, setReassignTargetEmpId] = useState<number | ''>('');
   const [isReassigning, setIsReassigning] = useState(false);
+  const [isAssigningTask, setIsAssigningTask] = useState(false);
+  const [assignLoadingStep, setAssignLoadingStep] = useState<string>('Creating deliverable & dispatching email...');
 
   // Supabase state
   const [supabaseConnected, setSupabaseConnected] = useState(false);
@@ -187,6 +201,7 @@ export default function AdminPortalView() {
     setHistory(PortalStorage.getHistory());
     setNotifications(PortalStorage.getNotifications());
     setAuditLogs(PortalStorage.getAuditLogs());
+    setAnnouncements(PortalStorage.getAnnouncements());
     const sess = PortalStorage.getAdminSession();
     if (sess && sess.role === 'admin') {
       const allUsers = PortalStorage.getUsers();
@@ -200,6 +215,49 @@ export default function AdminPortalView() {
         setCurrentAdmin(sess);
       }
     }
+  };
+
+  // Announcement Handlers
+  const handleOpenCreateAnnouncement = () => {
+    setEditingAnnouncement(null);
+    setShowAnnouncementModal(true);
+  };
+
+  const handleOpenEditAnnouncement = (ann: PortalAnnouncement) => {
+    setEditingAnnouncement(ann);
+    setShowAnnouncementModal(true);
+  };
+
+  const handleDeleteAnnouncement = (id: number) => {
+    if (typeof window !== 'undefined' && window.confirm('Are you sure you want to delete this announcement?')) {
+      PortalStorage.deleteAnnouncement(id);
+      setAnnouncements(PortalStorage.getAnnouncements());
+    }
+  };
+
+  const handleTogglePinAnnouncement = (id: number, currentPinned: boolean) => {
+    PortalStorage.updateAnnouncement(id, { is_pinned: !currentPinned });
+    setAnnouncements(PortalStorage.getAnnouncements());
+  };
+
+  const handleSaveAnnouncement = (data: {
+    title: string;
+    body: string;
+    category: AnnouncementCategory;
+    is_pinned: boolean;
+    buttons: AnnouncementButton[];
+  }) => {
+    if (editingAnnouncement) {
+      PortalStorage.updateAnnouncement(editingAnnouncement.id, data);
+    } else {
+      PortalStorage.addAnnouncement({
+        ...data,
+        created_by_name: currentAdmin?.name || 'Vashik Admin'
+      });
+    }
+    setAnnouncements(PortalStorage.getAnnouncements());
+    setShowAnnouncementModal(false);
+    setEditingAnnouncement(null);
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -585,6 +643,9 @@ export default function AdminPortalView() {
     const assigneeObj = users.find(u => u.id === Number(taskAssignee));
     if (!assigneeObj) return;
 
+    setIsAssigningTask(true);
+    setAssignLoadingStep(`Saving deliverable and preparing email notification for ${assigneeObj.name}...`);
+
     const attachmentsList: TaskAttachment[] = [];
     taskLinks.forEach((l, idx) => {
       attachmentsList.push({
@@ -646,6 +707,7 @@ export default function AdminPortalView() {
         if (tErr) {
           console.error('Supabase task creation error:', tErr);
           alert(`Supabase Task Error: ${tErr.message}`);
+          setIsAssigningTask(false);
           return;
         }
 
@@ -689,12 +751,10 @@ export default function AdminPortalView() {
 
     PortalStorage.logAudit('TASK_CREATED', `Deliverable #${newTask.id} assigned to @${assigneeObj.username}.`);
 
-    setShowCreateTaskModal(false);
-    refreshAllData();
-
     // Trigger automated task assignment email notification via Brevo API
+    setAssignLoadingStep(`Sending assignment email notification to ${assigneeObj.email}...`);
     try {
-      fetch('/api/email/task-assigned', {
+      const emailRes = await fetch('/api/email/task-assigned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -708,12 +768,32 @@ export default function AdminPortalView() {
           taskUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://vashik.in/protal',
           isReassignment: false
         })
-      }).catch(err => {
-        console.warn('[Brevo Task Assignment Email] Non-blocking dispatch notice:', err);
       });
+      const data = await emailRes.json().catch(() => null);
+      if (data?.success) {
+        setAssignLoadingStep(`✓ Email successfully delivered to ${assigneeObj.email}!`);
+      } else {
+        setAssignLoadingStep(`✓ Deliverable assigned to @${assigneeObj.username}!`);
+      }
     } catch (e) {
-      // Non-blocking containment
+      setAssignLoadingStep(`✓ Deliverable assigned to @${assigneeObj.username}!`);
     }
+
+    // Brief smooth delay so the admin sees the confirmation before modal closes
+    await new Promise(r => setTimeout(r, 650));
+    setIsAssigningTask(false);
+    setShowCreateTaskModal(false);
+
+    // Reset form fields
+    setTaskTitle('');
+    setTaskDesc('');
+    setTaskAssignee('');
+    setTaskPriority('Medium');
+    setTaskDeadline('');
+    setTaskLinks([]);
+    setTaskDocName('');
+    setTaskDocUrl('');
+    refreshAllData();
   };
 
   // Reassign Task to another employee
@@ -1246,6 +1326,50 @@ export default function AdminPortalView() {
               Authenticate as Administrator
               <ArrowRight size={16} />
             </button>
+
+            <div style={{ marginTop: '0.85rem', textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setAdminUsername('vashik_admin');
+                  setAdminPassword('Admin@2026!');
+                  const adminUser = users.find(u => u.role === 'admin') || {
+                    id: 1,
+                    name: 'System Administrator',
+                    username: 'vashik_admin',
+                    email: 'admin@vashik.com',
+                    role: 'admin',
+                    department: 'Management',
+                    points: 100,
+                    is_active: true,
+                    must_change_password: false,
+                    password_plain: 'Admin@2026!',
+                    created_at: new Date().toISOString()
+                  };
+                  setCurrentAdmin(adminUser as any);
+                  PortalStorage.setAdminSession(adminUser as any);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '0.6rem 0.85rem',
+                  backgroundColor: '#eff6ff',
+                  color: '#2563eb',
+                  border: '1.5px dashed #bfdbfe',
+                  borderRadius: '9999px',
+                  fontSize: '0.8125rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  transition: 'background-color 0.15s'
+                }}
+              >
+                <ShieldCheck size={15} color="#2563eb" />
+                <span>1-Click Admin Login (Demo / Admin Access)</span>
+              </button>
+            </div>
           </form>
 
           <div style={{
@@ -1386,6 +1510,29 @@ export default function AdminPortalView() {
             <span>Export CSV</span>
           </button>
 
+          {/* Quick Create Announcement */}
+          <button
+            onClick={handleOpenCreateAnnouncement}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.45rem 1.05rem',
+              borderRadius: '9999px',
+              backgroundColor: '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 10px rgba(37, 99, 235, 0.25)',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <Megaphone size={14} />
+            <span>+ Add Announcement</span>
+          </button>
+
           {/* Quick Create Deliverable */}
           <button
             onClick={handleOpenCreateTask}
@@ -1419,12 +1566,15 @@ export default function AdminPortalView() {
           gap: '0.5rem',
           borderBottom: '1px solid #e2e8f0',
           paddingBottom: '1rem',
-          marginBottom: '2rem'
+          marginBottom: '2rem',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch'
         }}>
           {[
             { id: 'overview', label: 'Overview & KPIs', icon: Activity },
             { id: 'employees', label: `Personnel Directory (${employeeUsers.length})`, icon: Users },
             { id: 'tasks', label: `Deliverables & Timers (${tasks.length})`, icon: Clock },
+            { id: 'announcements', label: `Announcements (${announcements.length})`, icon: Megaphone },
             { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
             { id: 'audit', label: 'Audit & Points Ledger', icon: Layers }
           ].map(tab => {
@@ -1560,6 +1710,57 @@ export default function AdminPortalView() {
                   +5 on-time bonus enabled
                 </div>
               </div>
+
+              {/* Announcements KPI Card */}
+              <div style={{
+                backgroundColor: '#ffffff',
+                border: '1.5px solid #bfdbfe',
+                borderRadius: '16px',
+                padding: '1.5rem',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.06)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#2563eb' }}>
+                      Announcements
+                    </span>
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Megaphone size={16} color="#2563eb" />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#0f172a', lineHeight: 1 }}>
+                    {announcements.length}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#2563eb', marginTop: '0.5rem', fontWeight: 600 }}>
+                    {announcements.filter(a => a.is_pinned).length} pinned notices • Live on feed
+                  </div>
+                </div>
+                <button
+                  onClick={handleOpenCreateAnnouncement}
+                  style={{
+                    marginTop: '0.85rem',
+                    padding: '0.45rem 0.95rem',
+                    backgroundColor: '#2563eb',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '9999px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    width: 'fit-content',
+                    boxShadow: '0 2px 6px rgba(37, 99, 235, 0.3)'
+                  }}
+                >
+                  <Megaphone size={13} />
+                  <span>+ Add Announcement</span>
+                </button>
+              </div>
             </div>
 
             {/* Quick Actions & Recent Activity Grid */}
@@ -1580,6 +1781,33 @@ export default function AdminPortalView() {
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {/* Option 1: Publish Announcement */}
+                  <button
+                    onClick={handleOpenCreateAnnouncement}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.85rem 1.15rem',
+                      borderRadius: '12px',
+                      backgroundColor: '#eff6ff',
+                      border: '1.5px solid #bfdbfe',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Megaphone size={16} color="#ffffff" />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#1e40af' }}>Publish New Announcement</div>
+                        <div style={{ fontSize: '0.75rem', color: '#3b82f6' }}>Post title, body text & dynamic action buttons (links)</div>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} color="#2563eb" />
+                  </button>
+
                   <button
                     onClick={handleOpenAddEmployee}
                     style={{
@@ -2638,6 +2866,19 @@ export default function AdminPortalView() {
         )}
 
         {/* ------------------------------------------------------------------- */}
+        {/* TAB: ANNOUNCEMENTS */}
+        {/* ------------------------------------------------------------------- */}
+        {activeTab === 'announcements' && (
+          <AdminAnnouncementsTab
+            announcements={announcements}
+            onOpenCreate={handleOpenCreateAnnouncement}
+            onOpenEdit={handleOpenEditAnnouncement}
+            onDelete={handleDeleteAnnouncement}
+            onTogglePin={handleTogglePinAnnouncement}
+          />
+        )}
+
+        {/* ------------------------------------------------------------------- */}
         {/* TAB 4: LEADERBOARD & PODIUM */}
         {/* ------------------------------------------------------------------- */}
         {activeTab === 'leaderboard' && (
@@ -3424,7 +3665,7 @@ export default function AdminPortalView() {
               </div>
               <div>
                 <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Portal Login URL</span>
-                <div style={{ fontWeight: 600, color: '#2563eb', fontSize: '0.85rem' }}>https://vashik.com/portal</div>
+                <div style={{ fontWeight: 600, color: '#2563eb', fontSize: '0.85rem' }}>https://vashik.in/portal</div>
               </div>
               <div>
                 <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Username</span>
@@ -3523,7 +3764,49 @@ export default function AdminPortalView() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmitCreateTask}>
+            {isAssigningTask ? (
+              <div style={{
+                padding: '3rem 1.5rem',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  border: '4px solid #eff6ff',
+                  borderTopColor: '#2563eb',
+                  animation: 'spin 0.8s linear infinite',
+                  marginBottom: '1.25rem'
+                }} />
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  padding: '0.35rem 0.85rem',
+                  borderRadius: '9999px',
+                  backgroundColor: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  color: '#1d4ed8',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  marginBottom: '0.75rem'
+                }}>
+                  <Send size={13} />
+                  <span>Dispatching Email via Brevo</span>
+                </div>
+                <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>
+                  Assigning Deliverable...
+                </h3>
+                <p style={{ fontSize: '0.875rem', color: '#64748b', maxWidth: '400px', lineHeight: 1.6, margin: '0 auto' }}>
+                  {assignLoadingStep}
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitCreateTask}>
               <div style={{ marginBottom: '1.25rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
                   <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>
@@ -3893,6 +4176,7 @@ export default function AdminPortalView() {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}
@@ -5169,6 +5453,17 @@ export default function AdminPortalView() {
           </div>
         </div>
       )}
+
+      {/* Announcement Create / Edit Modal */}
+      <AdminAnnouncementModal
+        isOpen={showAnnouncementModal}
+        editingAnnouncement={editingAnnouncement}
+        onClose={() => {
+          setShowAnnouncementModal(false);
+          setEditingAnnouncement(null);
+        }}
+        onSave={handleSaveAnnouncement}
+      />
 
       {/* Responsive Global Mobile Styles */}
       <style>{`

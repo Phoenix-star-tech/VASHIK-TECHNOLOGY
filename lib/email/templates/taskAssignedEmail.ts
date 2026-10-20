@@ -16,7 +16,7 @@ export interface EmailTemplateOutput {
 }
 
 export function generateTaskAssignedEmail(data: TaskAssignedEmailData): EmailTemplateOutput {
-  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://vashik.in/protal';
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://vashik.in/portal';
   const taskUrl = (data.taskUrl && !data.taskUrl.includes('localhost')) ? data.taskUrl : configuredUrl;
 
   const {
@@ -25,7 +25,7 @@ export function generateTaskAssignedEmail(data: TaskAssignedEmailData): EmailTem
     description,
     priority,
     dueDate,
-    assignedBy = 'System Administrator',
+    assignedBy = 'Vashik',
     isReassignment = false
   } = data;
 
@@ -92,7 +92,7 @@ export function generateTaskAssignedEmail(data: TaskAssignedEmailData): EmailTem
                 <tr>
                   <td>
                     <div style="font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: #ffffff; margin-bottom: 4px;">
-                      VESHIK <span style="color: #94a3b8; font-weight: 400; font-size: 13px; text-transform: uppercase; letter-spacing: 0.15em; margin-left: 6px;">TECHNOLOGIES</span>
+                      VASHIK <span style="color: #94a3b8; font-weight: 400; font-size: 13px; text-transform: uppercase; letter-spacing: 0.15em; margin-left: 6px;">TECHNOLOGIES</span>
                     </div>
                     <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #38bdf8;">
                       Deliverables & Task Tracking
@@ -213,7 +213,7 @@ export function generateTaskAssignedEmail(data: TaskAssignedEmailData): EmailTem
           <tr>
             <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 22px 36px; text-align: center;">
               <p style="margin: 0; font-size: 12px; font-weight: 700; color: #0f172a;">
-                Veshik Technologies
+                Vashik Technologies
               </p>
               <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">
                 Deliverables, Milestones & Engineering Performance Tracking
@@ -249,7 +249,7 @@ VIEW DELIVERABLE:
 ${taskUrl}
 
 Best regards,
-Veshik Technologies
+Vashik Technologies
 `;
 
   return { subject, html, text };

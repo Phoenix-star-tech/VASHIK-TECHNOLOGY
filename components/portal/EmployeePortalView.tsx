@@ -10,7 +10,8 @@ import {
   TaskStatus,
   PointsHistoryEntry,
   NotificationItem,
-  PortalStorage
+  PortalStorage,
+  PortalAnnouncement
 } from './PortalState';
 import { isSupabaseConfigured, getSupabaseConfig, getSupabaseClient } from '@/lib/supabase';
 import {
@@ -38,13 +39,20 @@ import {
   EyeOff,
   Search,
   Info,
-  UserCheck
+  UserCheck,
+  Megaphone,
+  Pin
 } from 'lucide-react';
 
 export default function EmployeePortalView() {
   const [mounted, setMounted] = useState(false);
   const [currentUser, setCurrentUser] = useState<PortalUser | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'leaderboard' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'announcements' | 'leaderboard' | 'profile'>('dashboard');
+
+  // Announcements Data
+  const [announcements, setAnnouncements] = useState<PortalAnnouncement[]>([]);
+  const [announcementSearch, setAnnouncementSearch] = useState('');
+  const [announcementCategoryFilter, setAnnouncementCategoryFilter] = useState<string>('all');
 
   // Login form state (Only for employees!)
   const [loginUsername, setLoginUsername] = useState('');
@@ -120,6 +128,7 @@ export default function EmployeePortalView() {
     setTasks(PortalStorage.getTasks());
     setHistory(PortalStorage.getHistory());
     setNotifications(PortalStorage.getNotifications());
+    setAnnouncements(PortalStorage.getAnnouncements());
     const sess = PortalStorage.getEmployeeSession();
     if (sess && sess.role === 'employee') {
       const allUsers = PortalStorage.getUsers();
@@ -163,7 +172,7 @@ export default function EmployeePortalView() {
     );
 
     if (adminAccount) {
-      setLoginError('This portal is exclusively for employees. Administrators must log in via the dedicated Admin URL at /admin.');
+      setLoginError('This portal is exclusively for employees.');
       return;
     }
 
@@ -669,7 +678,7 @@ export default function EmployeePortalView() {
           </form>
 
           <div style={{
-            marginTop: '1.75rem',
+            marginTop: '1.5rem',
             paddingTop: '1.25rem',
             borderTop: '1px solid #e2e8f0',
             textAlign: 'center',
@@ -1008,6 +1017,27 @@ export default function EmployeePortalView() {
             </button>
 
             <button
+              onClick={() => setActiveTab('announcements')}
+              style={{
+                padding: '0.35rem 0.85rem',
+                borderRadius: '9999px',
+                border: 'none',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                backgroundColor: activeTab === 'announcements' ? '#0f172a' : 'transparent',
+                color: activeTab === 'announcements' ? '#ffffff' : '#64748b'
+              }}
+            >
+              <Megaphone size={12} />
+              <span>Announcements ({announcements.length})</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('leaderboard')}
               style={{
                 padding: '0.35rem 0.85rem',
@@ -1151,6 +1181,105 @@ export default function EmployeePortalView() {
                 </div>
               </div>
             </div>
+
+            {/* Announcements Notice Banner */}
+            {announcements.length > 0 && (
+              <div style={{
+                backgroundColor: '#ffffff',
+                border: announcements[0].is_pinned ? '1.5px solid #fde68a' : '1px solid #e2e8f0',
+                borderRadius: '16px',
+                padding: '1.25rem 1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+                  <div style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: '10px',
+                    backgroundColor: '#eff6ff',
+                    color: '#2563eb',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <Megaphone size={18} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#2563eb' }}>
+                        Company Notice • {announcements[0].category}
+                      </span>
+                      {announcements[0].is_pinned && (
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.15rem 0.5rem', borderRadius: '9999px', backgroundColor: '#fef3c7', color: '#b45309' }}>
+                          Featured Notice
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0.2rem 0 0.15rem 0' }}>
+                      {announcements[0].title}
+                    </div>
+                    <p style={{
+                      fontSize: '0.8125rem',
+                      color: '#64748b',
+                      margin: 0,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 1,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>
+                      {announcements[0].body}
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {announcements[0].buttons && announcements[0].buttons.length > 0 && (
+                    <a
+                      href={announcements[0].buttons[0].url}
+                      target={announcements[0].buttons[0].url.startsWith('http') ? '_blank' : undefined}
+                      rel="noopener noreferrer"
+                      style={{
+                        padding: '0.45rem 0.95rem',
+                        borderRadius: '9999px',
+                        backgroundColor: '#0f172a',
+                        color: '#ffffff',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem'
+                      }}
+                    >
+                      <span>{announcements[0].buttons[0].label}</span>
+                      <ArrowRight size={12} />
+                    </a>
+                  )}
+
+                  <button
+                    onClick={() => setActiveTab('announcements')}
+                    style={{
+                      padding: '0.45rem 0.95rem',
+                      borderRadius: '9999px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      color: '#0f172a',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    View All ({announcements.length}) →
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Active Deliverables with Live Countdown Timers */}
             <div>
@@ -1474,6 +1603,254 @@ export default function EmployeePortalView() {
                 ))
               )}
             </div>
+          </div>
+        )}
+
+        {/* ==============================================
+            TAB: ANNOUNCEMENTS
+            ============================================== */}
+        {activeTab === 'announcements' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem'
+            }}>
+              <div>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', margin: '0 0 0.25rem 0' }}>
+                  Official Company Announcements
+                </h1>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+                  Updates, milestone alerts, and notices published by VASHIK leadership.
+                </p>
+              </div>
+
+              <Link
+                href="/announcements"
+                  target="_blank"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.55rem 1rem',
+                    borderRadius: '9999px',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    color: '#0f172a',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                  }}
+                >
+                  <span>Open Full Page View</span>
+                  <ExternalLink size={13} color="#64748b" />
+                </Link>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div style={{
+              backgroundColor: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '14px',
+              padding: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '0.75rem'
+            }}>
+              <div style={{ position: 'relative', flex: 1, minWidth: '220px', maxWidth: '400px' }}>
+                <Search size={15} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                <input
+                  type="text"
+                  value={announcementSearch}
+                  onChange={e => setAnnouncementSearch(e.target.value)}
+                  placeholder="Search announcements..."
+                  style={{
+                    width: '100%',
+                    padding: '0.55rem 0.85rem 0.55rem 2.4rem',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontSize: '0.8125rem',
+                    color: '#0f172a',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>Filter:</span>
+                <select
+                  value={announcementCategoryFilter}
+                  onChange={e => setAnnouncementCategoryFilter(e.target.value)}
+                  style={{
+                    padding: '0.55rem 0.85rem',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontSize: '0.8125rem',
+                    color: '#0f172a',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="all">All Categories</option>
+                  <option value="Company Update">Company Update</option>
+                  <option value="Milestone">Milestone</option>
+                  <option value="Event">Event</option>
+                  <option value="Urgent">Urgent</option>
+                  <option value="General">General</option>
+                  <option value="Policy">Policy</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Announcements Feed */}
+            {(() => {
+              const list = announcements.filter(a => {
+                const q = announcementSearch.toLowerCase();
+                const matches = a.title.toLowerCase().includes(q) || a.body.toLowerCase().includes(q);
+                const matchesCat = announcementCategoryFilter === 'all' || a.category === announcementCategoryFilter;
+                return matches && matchesCat;
+              });
+
+              if (list.length === 0) {
+                return (
+                  <div style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '16px',
+                    padding: '3rem 2rem',
+                    textAlign: 'center'
+                  }}>
+                    <Megaphone size={36} color="#94a3b8" style={{ margin: '0 auto 0.75rem' }} />
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
+                      No announcements found
+                    </h3>
+                    <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: 0 }}>
+                      No announcements match your search filters.
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {list.map(ann => (
+                    <article
+                      key={ann.id}
+                      style={{
+                        backgroundColor: '#ffffff',
+                        borderRadius: '16px',
+                        border: ann.is_pinned ? '1.5px solid #fde68a' : '1px solid #e2e8f0',
+                        boxShadow: ann.is_pinned ? '0 4px 16px rgba(245, 158, 11, 0.08)' : '0 2px 8px rgba(0, 0, 0, 0.02)',
+                        padding: '1.5rem',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '0.5rem',
+                        marginBottom: '0.75rem'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <span style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            padding: '0.2rem 0.65rem',
+                            borderRadius: '9999px',
+                            backgroundColor: '#eff6ff',
+                            border: '1px solid #bfdbfe',
+                            color: '#1d4ed8',
+                            textTransform: 'uppercase'
+                          }}>
+                            {ann.category}
+                          </span>
+
+                          {ann.is_pinned && (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              padding: '0.2rem 0.55rem',
+                              borderRadius: '9999px',
+                              backgroundColor: '#fffbeb',
+                              border: '1px solid #fde68a',
+                              color: '#b45309'
+                            }}>
+                              <Pin size={11} style={{ transform: 'rotate(45deg)' }} />
+                              Featured Notice
+                            </span>
+                          )}
+                        </div>
+
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                          {new Date(ann.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+
+                      <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>
+                        {ann.title}
+                      </h2>
+
+                      <p style={{
+                        fontSize: '0.875rem',
+                        lineHeight: 1.65,
+                        color: '#334155',
+                        whiteSpace: 'pre-line',
+                        margin: '0 0 1rem 0'
+                      }}>
+                        {ann.body}
+                      </p>
+
+                      {ann.buttons && ann.buttons.length > 0 && (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          flexWrap: 'wrap',
+                          paddingTop: '1rem',
+                          borderTop: '1px solid #f1f5f9'
+                        }}>
+                          {ann.buttons.map(btn => (
+                            <a
+                              key={btn.id}
+                              href={btn.url}
+                              target={btn.url.startsWith('http') ? '_blank' : undefined}
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '8px',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                textDecoration: 'none',
+                                backgroundColor: btn.variant === 'secondary' ? '#f1f5f9' : btn.variant === 'outline' ? '#ffffff' : '#0f172a',
+                                color: btn.variant === 'outline' ? '#2563eb' : btn.variant === 'secondary' ? '#0f172a' : '#ffffff',
+                                border: btn.variant === 'outline' ? '1.5px solid #2563eb' : '1px solid transparent'
+                              }}
+                            >
+                              <span>{btn.label}</span>
+                              <ArrowRight size={12} />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
 

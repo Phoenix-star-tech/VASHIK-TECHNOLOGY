@@ -3,6 +3,15 @@
  * Documentation: https://developers.brevo.com/reference/sendtransacemail
  */
 
+import dns from 'node:dns';
+
+// Ensure IPv4 is prioritized to prevent Node.js / undici IPv6 connect timeouts on Windows networks
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {
+  // Ignore in runtimes where setDefaultResultOrder is not supported
+}
+
 export interface EmailRecipient {
   email: string;
   name?: string;
@@ -31,7 +40,7 @@ export interface SendEmailResult {
 export async function send_email(options: SendEmailOptions): Promise<SendEmailResult> {
   const apiKey = process.env.BREVO_API_KEY?.trim();
   const senderEmail = process.env.BREVO_SENDER_EMAIL?.trim();
-  const senderName = process.env.BREVO_SENDER_NAME?.trim() || 'Veshik Technologies';
+  const senderName = process.env.BREVO_SENDER_NAME?.trim() || 'Vashik Technologies';
 
   const recipients = Array.isArray(options.to) ? options.to : [options.to];
 
@@ -90,37 +99,50 @@ export async function send_email(options: SendEmailOptions): Promise<SendEmailRe
     payload.tags = options.tags;
   }
 
-  try {
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'api-key': apiKey
-      },
-      body: JSON.stringify(payload)
-    });
+  // Attempt dispatch with 1 retry for transient network connectivity drops
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'api-key': apiKey
+        },
+        body: JSON.stringify(payload)
+      });
 
-    const data = await response.json().catch(() => null);
+      const data = await response.json().catch(() => null);
 
-    if (!response.ok) {
-      const errorMsg = data?.message || data?.error || `Brevo HTTP error ${response.status}: ${response.statusText}`;
-      console.error('[Brevo API Error]', errorMsg, { status: response.status, data });
+      if (!response.ok) {
+        const errorMsg = data?.message || data?.error || `Brevo HTTP error ${response.status}: ${response.statusText}`;
+        console.error('[Brevo API Error]', errorMsg, { status: response.status, data });
+        return {
+          success: false,
+          error: errorMsg
+        };
+      }
+
+      return {
+        success: true,
+        messageId: data?.messageId || `brevo-${Date.now()}`
+      };
+    } catch (err: any) {
+      if (attempt === 1) {
+        console.warn(`[Brevo Network Warning] Attempt 1 failed (${err?.message || 'network timeout'}), retrying in 1s...`);
+        await new Promise(res => setTimeout(res, 1000));
+        continue;
+      }
+      console.error('[Brevo Network Exception]', err);
       return {
         success: false,
-        error: errorMsg
+        error: err?.message || 'Unexpected network error while contacting Brevo API'
       };
     }
-
-    return {
-      success: true,
-      messageId: data?.messageId || `brevo-${Date.now()}`
-    };
-  } catch (err: any) {
-    console.error('[Brevo Network Exception]', err);
-    return {
-      success: false,
-      error: err?.message || 'Unexpected network error while contacting Brevo API'
-    };
   }
+
+  return {
+    success: false,
+    error: 'Failed to deliver email after retry attempts.'
+  };
 }

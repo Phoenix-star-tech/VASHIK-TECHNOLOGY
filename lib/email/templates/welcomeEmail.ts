@@ -13,7 +13,7 @@ export interface EmailTemplateOutput {
 }
 
 export function generateWelcomeEmail(data: WelcomeEmailData): EmailTemplateOutput {
-  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://vashik.in/protal';
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://vashik.in/portal';
   const loginUrl = (data.loginUrl && !data.loginUrl.includes('localhost')) ? data.loginUrl : configuredUrl;
 
   const {
@@ -23,7 +23,7 @@ export function generateWelcomeEmail(data: WelcomeEmailData): EmailTemplateOutpu
     supportEmail = process.env.BREVO_SENDER_EMAIL || 'support@vashik.com'
   } = data;
 
-  const subject = `Welcome to Veshik Technologies, ${employeeName}!`;
+  const subject = `Welcome to Vashik Technologies, ${employeeName}!`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -46,7 +46,7 @@ export function generateWelcomeEmail(data: WelcomeEmailData): EmailTemplateOutpu
                 <tr>
                   <td>
                     <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: #ffffff; margin-bottom: 6px;">
-                      VESHIK <span style="color: #94a3b8; font-weight: 400; font-size: 14px; text-transform: uppercase; letter-spacing: 0.15em; margin-left: 8px;">TECHNOLOGIES</span>
+                      VASHIK <span style="color: #94a3b8; font-weight: 400; font-size: 14px; text-transform: uppercase; letter-spacing: 0.15em; margin-left: 8px;">TECHNOLOGIES</span>
                     </div>
                     <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #38bdf8;">
                       Official Personnel Onboarding
@@ -65,7 +65,7 @@ export function generateWelcomeEmail(data: WelcomeEmailData): EmailTemplateOutpu
               </h1>
               
               <p style="font-size: 15px; line-height: 1.65; color: #334155; margin: 0 0 20px 0;">
-                We are thrilled to welcome you to <strong>Veshik Technologies</strong>. As a key member of our engineering and delivery team, your workspace has been provisioned and is ready for access.
+                We are thrilled to welcome you to <strong>Vashik Technologies</strong>. As a key member of our engineering and delivery team, your workspace has been provisioned and is ready for access.
               </p>
 
               <!-- Account Details Box -->
@@ -153,7 +153,7 @@ export function generateWelcomeEmail(data: WelcomeEmailData): EmailTemplateOutpu
           <tr>
             <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 24px 36px; text-align: center;">
               <p style="margin: 0; font-size: 12px; font-weight: 700; color: #0f172a;">
-                Veshik Technologies
+                Vashik Technologies
               </p>
               <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">
                 Enterprise Engineering, Cloud Architecture & Scalable Solutions
@@ -171,9 +171,9 @@ export function generateWelcomeEmail(data: WelcomeEmailData): EmailTemplateOutpu
 </body>
 </html>`;
 
-  const text = `Welcome to Veshik Technologies, ${employeeName}!
+  const text = `Welcome to Vashik Technologies, ${employeeName}!
 
-We are thrilled to welcome you to Veshik Technologies. Your employee account has been created.
+We are thrilled to welcome you to Vashik Technologies. Your employee account has been created.
 
 ACCOUNT DETAILS:
 - Login URL: ${loginUrl}
@@ -186,7 +186,7 @@ SUPPORT:
 If you need assistance, please contact us at ${supportEmail}.
 
 Best regards,
-Veshik Technologies Team
+Vashik Technologies Team
 ${loginUrl}
 `;
 
