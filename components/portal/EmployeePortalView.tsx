@@ -111,6 +111,11 @@ export default function EmployeePortalView() {
       });
     }
 
+    // Subscribe to Realtime announcements & cross-tab sync
+    const unsubAnnouncements = PortalStorage.subscribeToAnnouncements(items => {
+      setAnnouncements(items);
+    });
+
     // Auto 1-minute overdue scheduler
     PortalStorage.checkAndProcessOverdue();
     refreshAllData();
@@ -120,7 +125,10 @@ export default function EmployeePortalView() {
       if (changed) refreshAllData();
     }, 60000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      unsubAnnouncements();
+    };
   }, []);
 
   const refreshAllData = () => {

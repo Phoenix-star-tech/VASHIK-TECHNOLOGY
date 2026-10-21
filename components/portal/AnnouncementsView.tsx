@@ -47,10 +47,19 @@ export default function AnnouncementsView() {
     const data = PortalStorage.getAnnouncements();
     setAnnouncements(data);
 
-    // Optional background sync if Supabase is active
-    PortalStorage.syncFromSupabase().then(() => {
-      setAnnouncements(PortalStorage.getAnnouncements());
+    // Subscribe to Realtime announcements & cross-tab sync
+    const unsubAnnouncements = PortalStorage.subscribeToAnnouncements(items => {
+      setAnnouncements(items);
     });
+
+    // Background sync from Supabase
+    PortalStorage.syncAnnouncementsFromSupabase().then(items => {
+      setAnnouncements(items);
+    });
+
+    return () => {
+      unsubAnnouncements();
+    };
   }, []);
 
   const handleCopyLink = (announcement: PortalAnnouncement) => {

@@ -183,6 +183,11 @@ export default function AdminPortalView() {
       });
     }
 
+    // Subscribe to Realtime announcements & cross-tab sync
+    const unsubAnnouncements = PortalStorage.subscribeToAnnouncements(items => {
+      setAnnouncements(items);
+    });
+
     // 1-minute automated overdue cron
     PortalStorage.checkAndProcessOverdue();
     refreshAllData();
@@ -192,7 +197,10 @@ export default function AdminPortalView() {
       if (changed) refreshAllData();
     }, 60000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      unsubAnnouncements();
+    };
   }, []);
 
   const refreshAllData = () => {
@@ -228,19 +236,19 @@ export default function AdminPortalView() {
     setShowAnnouncementModal(true);
   };
 
-  const handleDeleteAnnouncement = (id: number) => {
+  const handleDeleteAnnouncement = async (id: number) => {
     if (typeof window !== 'undefined' && window.confirm('Are you sure you want to delete this announcement?')) {
-      PortalStorage.deleteAnnouncement(id);
+      await PortalStorage.deleteAnnouncement(id);
       setAnnouncements(PortalStorage.getAnnouncements());
     }
   };
 
-  const handleTogglePinAnnouncement = (id: number, currentPinned: boolean) => {
-    PortalStorage.updateAnnouncement(id, { is_pinned: !currentPinned });
+  const handleTogglePinAnnouncement = async (id: number, currentPinned: boolean) => {
+    await PortalStorage.updateAnnouncement(id, { is_pinned: !currentPinned });
     setAnnouncements(PortalStorage.getAnnouncements());
   };
 
-  const handleSaveAnnouncement = (data: {
+  const handleSaveAnnouncement = async (data: {
     title: string;
     body: string;
     category: AnnouncementCategory;
@@ -248,9 +256,9 @@ export default function AdminPortalView() {
     buttons: AnnouncementButton[];
   }) => {
     if (editingAnnouncement) {
-      PortalStorage.updateAnnouncement(editingAnnouncement.id, data);
+      await PortalStorage.updateAnnouncement(editingAnnouncement.id, data);
     } else {
-      PortalStorage.addAnnouncement({
+      await PortalStorage.addAnnouncement({
         ...data,
         created_by_name: currentAdmin?.name || 'Vashik Admin'
       });

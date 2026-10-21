@@ -279,3 +279,19 @@ CREATE TABLE IF NOT EXISTS public.announcements (
 CREATE INDEX IF NOT EXISTS idx_announcements_created ON public.announcements(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_announcements_pinned ON public.announcements(is_pinned);
 
+-- Enable Supabase Realtime for announcements table
+ALTER TABLE public.announcements REPLICA IDENTITY FULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'announcements'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.announcements;
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  -- Fallback if publication doesn't exist yet in local setup
+  NULL;
+END $$;
+
+

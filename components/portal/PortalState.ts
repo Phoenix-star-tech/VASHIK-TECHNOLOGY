@@ -359,6 +359,9 @@ const DEFAULT_ANNOUNCEMENTS: PortalAnnouncement[] = [
 
 export class PortalStorage {
   private static STORAGE_PREFIX = 'vashik_portal_';
+  private static announcementListeners: Set<(items: PortalAnnouncement[]) => void> = new Set();
+  private static realtimeChannel: any = null;
+  private static broadcastChannel: BroadcastChannel | null = null;
 
   static get<T>(key: string, defaultVal: T): T {
     if (typeof window === 'undefined') return defaultVal;
@@ -439,67 +442,238 @@ export class PortalStorage {
     }
   }
 
-  // Announcements CRUD
+  // Announcements CRUD & Realtime Subscriptions
   static getAnnouncements(): PortalAnnouncement[] {
     return this.get<PortalAnnouncement[]>('announcements', DEFAULT_ANNOUNCEMENTS);
   }
 
   static setAnnouncements(items: PortalAnnouncement[]): void {
     this.set('announcements', items);
+    this.notifyAnnouncements(items);
   }
 
-  static addAnnouncement(item: Omit<PortalAnnouncement, 'id' | 'created_at'>): PortalAnnouncement {
-    const current = this.getAnnouncements();
-    const newAnnouncement: PortalAnnouncement = {
+  private static notifyAnnouncements(items: PortalAnnouncement[]): void {
+    // 1. Notify in-memory listeners
+    this.announcementListeners.forEach(fn => {
+      try { fn(items); } catch (e) { console.error(e); }
+    });
+
+    // 2. Dispatch custom event for components in same window
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(new CustomEvent('vashik_announcements_updated', { detail: items }));
+      } catch {}
+
+      // 3. Post to BroadcastChannel for other open tabs
+      try {
+        if (!this.broadcastChannel && typeof BroadcastChannel !== 'undefined') {
+          this.broadcastChannel = new BroadcastChannel('vashik_announcements_sync');
+        }
+        this.broadcastChannel?.postMessage({ type: 'announcements_updated', items });
+      } catch {}
+    }
+  }
+
+  static subscribeToAnnouncements(listener: (announcements: PortalAnnouncement[]) => void): () => void {
+    this.announcementListeners.add(listener);
+
+    let handleCustomEvent: ((e: any) => void) | null = null;
+    let handleStorage: ((e: StorageEvent) => void) | null = null;
+    let handleBroadcast: ((e: MessageEvent) => void) | null = null;
+
+    if (typeof window !== 'undefined') {
+      handleCustomEvent = () => listener(this.getAnnouncements());
+      window.addEventListener('vashik_announcements_updated', handleCustomEvent);
+
+      handleStorage = (e: StorageEvent) => {
+        if (e.key === `${this.STORAGE_PREFIX}announcements`) {
+          listener(this.getAnnouncements());
+        }
+      };
+      window.addEventListener('storage', handleStorage);
+
+      if (typeof BroadcastChannel !== 'undefined') {
+        if (!this.broadcastChannel) {
+          this.broadcastChannel = new BroadcastChannel('vashik_announcements_sync');
+        }
+        handleBroadcast = (ev: MessageEvent) => {
+          if (ev.data?.type === 'announcements_updated') {
+            listener(this.getAnnouncements());
+          }
+        };
+        this.broadcastChannel.addEventListener('message', handleBroadcast);
+      }
+
+      // Initialize Supabase realtime channel
+      this.initSupabaseAnnouncementsRealtime();
+    }
+
+    return () => {
+      this.announcementListeners.delete(listener);
+      if (typeof window !== 'undefined') {
+        if (handleCustomEvent) window.removeEventListener('vashik_announcements_updated', handleCustomEvent);
+        if (handleStorage) window.removeEventListener('storage', handleStorage);
+        if (handleBroadcast && this.broadcastChannel) {
+          this.broadcastChannel.removeEventListener('message', handleBroadcast);
+        }
+      }
+    };
+  }
+
+  static initSupabaseAnnouncementsRealtime(): void {
+    if (typeof window === 'undefined') return;
+    if (this.realtimeChannel) return; // already active
+
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    try {
+      this.realtimeChannel = supabase
+        .channel('realtime_announcements_live')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'announcements' },
+          async (payload) => {
+            console.log('[Realtime] Announcement change detected:', payload.eventType, payload);
+
+            // Optimistic deletion
+            if (payload.eventType === 'DELETE') {
+              const oldId = (payload.old as any)?.id;
+              if (oldId !== undefined) {
+                const current = this.getAnnouncements();
+                const filtered = current.filter(a => Number(a.id) !== Number(oldId));
+                this.set('announcements', filtered);
+                this.notifyAnnouncements(filtered);
+              }
+            }
+
+            // Sync authoritative data from Supabase
+            await this.syncAnnouncementsFromSupabase();
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('[Supabase Realtime] Connected to announcements channel');
+          }
+        });
+    } catch (err) {
+      console.error('[Supabase Realtime] Announcements connection error:', err);
+    }
+  }
+
+  static async syncAnnouncementsFromSupabase(): Promise<PortalAnnouncement[]> {
+    const supabase = getSupabaseClient();
+    if (!supabase) return this.getAnnouncements();
+
+    try {
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('*')
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        const mapped: PortalAnnouncement[] = data.map((item: any) => ({
+          id: Number(item.id),
+          title: item.title,
+          body: item.body,
+          category: item.category || 'General',
+          is_pinned: Boolean(item.is_pinned),
+          buttons: Array.isArray(item.buttons) ? item.buttons : [],
+          created_by_name: item.created_by_name || 'Vashik Admin',
+          created_at: item.created_at || new Date().toISOString(),
+          updated_at: item.updated_at
+        }));
+        this.set('announcements', mapped);
+        this.notifyAnnouncements(mapped);
+        return mapped;
+      }
+    } catch (e) {
+      console.error('Failed to sync announcements:', e);
+    }
+    return this.getAnnouncements();
+  }
+
+  static async addAnnouncement(item: Omit<PortalAnnouncement, 'id' | 'created_at'>): Promise<PortalAnnouncement> {
+    const tempId = Date.now();
+    let newAnnouncement: PortalAnnouncement = {
       ...item,
-      id: Date.now(),
+      id: tempId,
       created_at: new Date().toISOString()
     };
-    // If pinned, insert at start, else after pinned items
+    const current = this.getAnnouncements();
     const updated = [newAnnouncement, ...current];
     this.setAnnouncements(updated);
 
-    // Sync to Supabase if available
     const supabase = getSupabaseClient();
     if (supabase) {
-      supabase.from('announcements').insert([{
-        title: newAnnouncement.title,
-        body: newAnnouncement.body,
-        category: newAnnouncement.category,
-        is_pinned: newAnnouncement.is_pinned,
-        buttons: newAnnouncement.buttons,
-        created_by_name: newAnnouncement.created_by_name
-      }]).then();
+      try {
+        const { data, error } = await supabase.from('announcements').insert([{
+          title: newAnnouncement.title,
+          body: newAnnouncement.body,
+          category: newAnnouncement.category,
+          is_pinned: newAnnouncement.is_pinned,
+          buttons: newAnnouncement.buttons,
+          created_by_name: newAnnouncement.created_by_name
+        }]).select().single();
+
+        if (!error && data) {
+          newAnnouncement = {
+            id: Number(data.id),
+            title: data.title,
+            body: data.body,
+            category: data.category || 'General',
+            is_pinned: Boolean(data.is_pinned),
+            buttons: Array.isArray(data.buttons) ? data.buttons : [],
+            created_by_name: data.created_by_name || 'Vashik Admin',
+            created_at: data.created_at || new Date().toISOString(),
+            updated_at: data.updated_at
+          };
+          const latest = this.getAnnouncements();
+          const synced = latest.map(a => Number(a.id) === tempId ? newAnnouncement : a);
+          this.setAnnouncements(synced);
+        }
+      } catch (err) {
+        console.error('Error inserting announcement to Supabase:', err);
+      }
     }
 
     this.logAudit('Announcement Published', `Admin published "${newAnnouncement.title}"`);
     return newAnnouncement;
   }
 
-  static updateAnnouncement(id: number, updates: Partial<PortalAnnouncement>): void {
+  static async updateAnnouncement(id: number, updates: Partial<PortalAnnouncement>): Promise<void> {
     const current = this.getAnnouncements();
-    const updated = current.map(a => a.id === id ? { ...a, ...updates, updated_at: new Date().toISOString() } : a);
+    const updated = current.map(a => Number(a.id) === Number(id) ? { ...a, ...updates, updated_at: new Date().toISOString() } : a);
     this.setAnnouncements(updated);
 
     const supabase = getSupabaseClient();
     if (supabase) {
-      supabase.from('announcements').update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      }).eq('id', id).then();
+      try {
+        await supabase.from('announcements').update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        }).eq('id', id);
+      } catch (err) {
+        console.error('Error updating announcement in Supabase:', err);
+      }
     }
     this.logAudit('Announcement Updated', `Announcement ID #${id} updated`);
   }
 
-  static deleteAnnouncement(id: number): void {
+  static async deleteAnnouncement(id: number): Promise<void> {
     const current = this.getAnnouncements();
-    const target = current.find(a => a.id === id);
-    const updated = current.filter(a => a.id !== id);
+    const target = current.find(a => Number(a.id) === Number(id));
+    const updated = current.filter(a => Number(a.id) !== Number(id));
     this.setAnnouncements(updated);
 
     const supabase = getSupabaseClient();
     if (supabase) {
-      supabase.from('announcements').delete().eq('id', id).then();
+      try {
+        await supabase.from('announcements').delete().eq('id', id);
+      } catch (err) {
+        console.error('Error deleting announcement from Supabase:', err);
+      }
     }
     if (target) {
       this.logAudit('Announcement Deleted', `Deleted announcement "${target.title}"`);
@@ -583,10 +757,8 @@ export class PortalStorage {
       }
 
       // 5. Fetch Announcements
-      const { data: dbAnnouncements } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
-      if (dbAnnouncements && dbAnnouncements.length > 0) {
-        this.setAnnouncements(dbAnnouncements);
-      }
+      await this.syncAnnouncementsFromSupabase();
+
 
       return true;
     } catch (e) {
