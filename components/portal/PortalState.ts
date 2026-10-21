@@ -572,18 +572,31 @@ export class PortalStorage {
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
-        const mapped: PortalAnnouncement[] = data.map((item: any) => ({
-          id: Number(item.id),
-          title: item.title,
-          body: item.body,
-          category: item.category || 'General',
-          is_pinned: Boolean(item.is_pinned),
-          buttons: Array.isArray(item.buttons) ? item.buttons : [],
-          created_by_name: item.created_by_name || 'Vashik Admin',
-          created_at: item.created_at || new Date().toISOString(),
-          updated_at: item.updated_at
-        }));
+      if (error) {
+        console.error('[Supabase Sync Error]:', error.message);
+        return this.getAnnouncements();
+      }
+
+      if (data) {
+        // Keep any pending local announcements (timestamp id) so they are not wiped if DB insert was blocked
+        const current = this.getAnnouncements();
+        const pendingLocal = current.filter(a => Number(a.id) > 1000000000000 && !data.some((d: any) => d.title === a.title));
+
+        const mapped: PortalAnnouncement[] = [
+          ...pendingLocal,
+          ...data.map((item: any) => ({
+            id: Number(item.id),
+            title: item.title,
+            body: item.body,
+            category: item.category || 'General',
+            is_pinned: Boolean(item.is_pinned),
+            buttons: Array.isArray(item.buttons) ? item.buttons : [],
+            created_by_name: item.created_by_name || 'Vashik Admin',
+            created_at: item.created_at || new Date().toISOString(),
+            updated_at: item.updated_at
+          }))
+        ];
+
         this.set('announcements', mapped);
         this.notifyAnnouncements(mapped);
         return mapped;
@@ -594,9 +607,9 @@ export class PortalStorage {
     return this.getAnnouncements();
   }
 
-  static async addAnnouncement(item: Omit<PortalAnnouncement, 'id' | 'created_at'>): Promise<PortalAnnouncement> {
+  static async addAnnouncement(item: Omit<PortalAnnouncement, 'id' | 'created_at'>): Promise<PortalAnnouncement & { error?: string }> {
     const tempId = Date.now();
-    let newAnnouncement: PortalAnnouncement = {
+    let newAnnouncement: PortalAnnouncement & { error?: string } = {
       ...item,
       id: tempId,
       created_at: new Date().toISOString()
@@ -613,11 +626,14 @@ export class PortalStorage {
           body: newAnnouncement.body,
           category: newAnnouncement.category,
           is_pinned: newAnnouncement.is_pinned,
-          buttons: newAnnouncement.buttons,
+          buttons: newAnnouncement.buttons || [],
           created_by_name: newAnnouncement.created_by_name
         }]).select().single();
 
-        if (!error && data) {
+        if (error) {
+          console.error('[Supabase Announcement Insert Error]:', error);
+          newAnnouncement.error = error.message;
+        } else if (!error && data) {
           newAnnouncement = {
             id: Number(data.id),
             title: data.title,
@@ -633,8 +649,9 @@ export class PortalStorage {
           const synced = latest.map(a => Number(a.id) === tempId ? newAnnouncement : a);
           this.setAnnouncements(synced);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error inserting announcement to Supabase:', err);
+        newAnnouncement.error = err?.message || 'Database error';
       }
     }
 

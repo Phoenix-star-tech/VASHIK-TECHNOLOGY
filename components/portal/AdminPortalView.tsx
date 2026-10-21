@@ -255,17 +255,24 @@ export default function AdminPortalView() {
     is_pinned: boolean;
     buttons: AnnouncementButton[];
   }) => {
-    if (editingAnnouncement) {
-      await PortalStorage.updateAnnouncement(editingAnnouncement.id, data);
-    } else {
-      await PortalStorage.addAnnouncement({
-        ...data,
-        created_by_name: currentAdmin?.name || 'Vashik Admin'
-      });
+    try {
+      if (editingAnnouncement) {
+        await PortalStorage.updateAnnouncement(editingAnnouncement.id, data);
+      } else {
+        const res = await PortalStorage.addAnnouncement({
+          ...data,
+          created_by_name: currentAdmin?.name || 'Vashik Admin'
+        });
+        if (res && res.error) {
+          alert(`Notice: Announcement was saved locally, but Supabase returned a policy restriction:\n"${res.error}"\n\nPlease apply the Row Level Security (RLS) policy in your Supabase SQL editor.`);
+        }
+      }
+      setAnnouncements(PortalStorage.getAnnouncements());
+      setShowAnnouncementModal(false);
+      setEditingAnnouncement(null);
+    } catch (err: any) {
+      alert(`Error saving announcement: ${err?.message || err}`);
     }
-    setAnnouncements(PortalStorage.getAnnouncements());
-    setShowAnnouncementModal(false);
-    setEditingAnnouncement(null);
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
